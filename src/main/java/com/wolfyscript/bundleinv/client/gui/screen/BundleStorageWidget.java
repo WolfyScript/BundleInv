@@ -7,19 +7,19 @@ import com.wolfyscript.bundleinv.client.BundleInvClient;
 import com.wolfyscript.bundleinv.client.gui.widget.BundleItemContainer;
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
-import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.PlayerScreenHandler;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
@@ -136,10 +136,10 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     /**
      * Gets the new left edge of the inventory to make place for this widget.
      *
-     * @param x The current x position of the inventory.
-     * @param width The width of the inventory.
+     * @param x               The current x position of the inventory.
+     * @param width           The width of the inventory.
      * @param backgroundWidth The background width of the inventory.
-     * @param recipeBookOpen If the recipe book is currently open.
+     * @param recipeBookOpen  If the recipe book is currently open.
      * @return The new left postion of the inventory.
      */
     public int findLeftEdge(int x, int width, int backgroundWidth, boolean recipeBookOpen) {
@@ -163,7 +163,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             int scrollbarTopX = x + WIDTH - 24;
             int scrollbarTopY = y + 29;
             int scrollbarBottom = scrollbarTopY + 126;
-            this.drawTexture(matrices, scrollbarTopX, scrollbarTopY + (int)((float)(scrollbarBottom - scrollbarTopY - 17) * this.scrollPosition), 26 + (canScroll ? 0 : 12), 167, 12, 15);
+            this.drawTexture(matrices, scrollbarTopX, scrollbarTopY + (int) ((float) (scrollbarBottom - scrollbarTopY - 17) * this.scrollPosition), 26 + (canScroll ? 0 : 12), 167, 12, 15);
 
             hoveredBundleItemContainer = null;
             for (BundleItemContainer itemContainer : itemContainers) {
@@ -205,7 +205,6 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
         if (this.scrolling && canScroll) {
-            int x = (this.parentWidth - WIDTH) / 2 + this.leftOffset;
             int y = (this.parentHeight - HEIGHT) / 2;
 
             int scrollBarTopY = y + 29;
@@ -268,7 +267,19 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             if (!client.player.currentScreenHandler.getCursorStack().isEmpty()) {
                 ItemStack stack = client.player.currentScreenHandler.getCursorStack();
 
-                BundleInvClient.sendBundleStorageStoreItem(true, stack);
+                ItemStack clientStack = stack.copy();
+                int remaining = storage.addStack(clientStack);
+                if (remaining < stack.getCount()) {
+                    clientStack.setCount(remaining);
+                    client.player.currentScreenHandler.setCursorStack(clientStack);
+                    client.player.playSound(SoundEvents.ITEM_BUNDLE_INSERT, SoundCategory.MASTER, 1f, 1f);
+                    BundleInvClient.sendBundleStorageStoreItem(true, stack);
+
+                    if (client.currentScreen instanceof InvScreenRefresh inventoryScreen) {
+                        inventoryScreen.refreshWidgets();
+                    }
+                }
+
             }
         }
         return false;
