@@ -220,6 +220,16 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         return false;
     }
 
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
+        if (!canScroll) return false;
+        int stepPerPage = (storage.size() + 2) / 4;
+        float value = (float) (amount / stepPerPage);
+        this.scrollPosition = MathHelper.clamp(this.scrollPosition - value, 0.0f, 1f);
+        scrollContainers(scrollPosition);
+        return true;
+    }
+
     private void scrollContainers(float position) {
         int stepPerPage = (storage.size() + 2) / 4;
         int itemPos = (int) ((double) (position * (float) stepPerPage) + 0.5);
