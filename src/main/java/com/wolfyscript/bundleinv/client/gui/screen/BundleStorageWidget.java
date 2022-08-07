@@ -186,7 +186,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     }
 
     public void drawTooltip(MatrixStack matrices, int x, int y, int mouseX, int mouseY) {
-        if (this.isOpen()) {
+        if (this.isOpen() && handler.getCursorStack().isEmpty()) {
             if (hoveredBundleItemContainer != null) {
                 List<Text> text = client.currentScreen.getTooltipFromItem(hoveredBundleItemContainer.getItemStack());
                 if (this.client.currentScreen != null) {
