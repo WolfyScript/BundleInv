@@ -39,8 +39,10 @@ public class BundleInv implements ModInitializer {
                         if (cursorStack == null || cursorStack.isEmpty()) return;
                         PlayerBundleStorage storage = ((BundleStorageHolder) player.getInventory()).getBundleStorage();
                         int remaining = storage.addStack(cursorStack);
+                        //sendBundleStorageUpdate(player, true, cursorStack);
                         cursorStack.setCount(remaining);
                         player.getInventory().markDirty();
+                        player.playerScreenHandler.syncState();
                     }
                 }
             });

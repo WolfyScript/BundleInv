@@ -61,16 +61,26 @@ public class BundleItemContainer extends ClickableWidget {
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!handler.getCursorStack().isEmpty()) {
+            return false;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public void onClick(double mouseX, double mouseY) {
         //TODO: Send packet to server to request an item
-        ItemStack toSend = itemStack.copy();
-        toSend.setCount(Math.min(toSend.getCount(), toSend.getMaxCount()));
+        if (handler.getCursorStack().isEmpty()) {
+            ItemStack toSend = itemStack.copy();
+            toSend.setCount(Math.min(toSend.getCount(), toSend.getMaxCount()));
 
-        PacketByteBuf packetBuf = PacketByteBufs.create();
-        packetBuf.writeByte(id);
-        packetBuf.writeInt(toSend.getMaxCount());
-        packetBuf.writeItemStack(toSend);
-        ClientPlayNetworking.send(BundleInvConstants.C2S_BUNDLE_ITEM_CONTAINER_CLICK_PACKET, packetBuf);
+            PacketByteBuf packetBuf = PacketByteBufs.create();
+            packetBuf.writeByte(id);
+            packetBuf.writeInt(toSend.getMaxCount());
+            packetBuf.writeItemStack(toSend);
+            ClientPlayNetworking.send(BundleInvConstants.C2S_BUNDLE_ITEM_CONTAINER_CLICK_PACKET, packetBuf);
+        }
     }
 
     @Override
