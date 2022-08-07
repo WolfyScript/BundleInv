@@ -37,7 +37,6 @@ public class BundleInvClient implements ClientModInitializer {
     public static void sendBundleStorageStoreItem(boolean cursor, ItemStack itemStack) {
         PacketByteBuf buf = PacketByteBufs.create();
         buf.writeBoolean(cursor);
-        buf.writeItemStack(itemStack);
         ClientPlayNetworking.send(BundleInvConstants.C2S_BUNDLE_STORAGE_STORE_ITEM, buf);
     }
 

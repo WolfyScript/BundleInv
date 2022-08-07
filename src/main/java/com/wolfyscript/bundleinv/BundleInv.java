@@ -32,7 +32,6 @@ public class BundleInv implements ModInitializer {
         });
         ServerPlayNetworking.registerGlobalReceiver(BundleInvConstants.C2S_BUNDLE_STORAGE_STORE_ITEM, (server, player, handler, buf, responseSender) -> {
             boolean cursor = buf.readBoolean();
-            ItemStack itemStack = buf.readItemStack(); //TODO: actually not needed!
             server.executeSync(() -> {
                 if (player.currentScreenHandler == player.playerScreenHandler) {
                     if (cursor) {
