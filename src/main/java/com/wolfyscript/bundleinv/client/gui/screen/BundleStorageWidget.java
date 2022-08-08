@@ -8,22 +8,31 @@ import com.wolfyscript.bundleinv.client.gui.widget.BundleItemContainer;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
+import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.item.TooltipContext;
 import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.search.TextSearchProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.ColorHelper;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.registry.Registry;
+import org.lwjgl.glfw.GLFW;
 
 public class BundleStorageWidget extends DrawableHelper implements Drawable, Element, Selectable {
 
@@ -35,6 +44,11 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     protected MinecraftClient client;
     private PlayerScreenHandler handler;
     private PlayerBundleStorage storage;
+
+    private TextFieldWidget searchField;
+    private String searchText;
+    private boolean searching;
+    private List<ItemStack> items;
 
     private int leftOffset;
     private int parentWidth;
@@ -71,20 +85,26 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         this.parentHeight = parentHeight;
         this.narrow = narrow;
         this.cachedInvChangeCount = client.player.getInventory().getChangeCount();
+        if (items == null) {
+            items = List.of();
+        }
 
         if (open) {
-
             reset();
         }
     }
 
     public void update() {
+        if (!isOpen()) {
+            return;
+        }
         if (this.cachedInvChangeCount != this.client.player.getInventory().getChangeCount()) {
             for (BundleItemContainer container : itemContainers) {
                 container.checkVisibility();
             }
             this.cachedInvChangeCount = this.client.player.getInventory().getChangeCount();
         }
+        searchField.tick();
     }
 
     private void reset() {
@@ -101,6 +121,14 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
                 container.visible = false;
             }
         }
+
+        String string = this.searchField != null ? this.searchField.getText() : "";
+        this.searchField = new TextFieldWidget(this.client.textRenderer, x + 25, y + 14, 71, this.client.textRenderer.fontHeight + 5, Text.translatable("itemGroup.search"));
+        this.searchField.setMaxLength(50);
+        this.searchField.setDrawsBackground(false);
+        this.searchField.setVisible(true);
+        this.searchField.setEditableColor(0xFFFFFF);
+        this.searchField.setText(string);
         updateSlots();
     }
 
@@ -112,7 +140,19 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     public void updateSlots() {
         canScroll = storage.size() > 15;
+        refreshResults(false);
         scrollContainers(scrollPosition);
+    }
+
+    private void refreshResults(boolean resetCurrentPage) {
+        String string = this.searchField.getText();
+        if (!string.isEmpty()) {
+            TextSearchProvider<ItemStack> search = new TextSearchProvider<>(stack -> stack.getTooltip(null, TooltipContext.Default.NORMAL).stream().map(tooltip -> Formatting.strip(tooltip.getString()).trim()).filter(text -> !text.isEmpty()), stack -> Stream.of(Registry.ITEM.getId(stack.getItem())), storage.getStacks().stream().toList());
+            search.reload();
+            items = search.findAll(string.toLowerCase(Locale.ROOT));
+        } else {
+            items = storage.getStacks().stream().toList();
+        }
     }
 
     private void setOpen(boolean open) {
@@ -158,12 +198,18 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             RenderSystem.setShaderTexture(0, TEXTURE);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
-            this.drawTexture(matrices, x, y, 0, 0, WIDTH, HEIGHT);
+            drawTexture(matrices, x, y, 0, 0, WIDTH, HEIGHT);
 
             int scrollbarTopX = x + WIDTH - 24;
             int scrollbarTopY = y + 29;
             int scrollbarBottom = scrollbarTopY + 126;
-            this.drawTexture(matrices, scrollbarTopX, scrollbarTopY + (int) ((float) (scrollbarBottom - scrollbarTopY - 17) * this.scrollPosition), 26 + (canScroll ? 0 : 12), 167, 12, 15);
+            drawTexture(matrices, scrollbarTopX, scrollbarTopY + (int) ((float) (scrollbarBottom - scrollbarTopY - 17) * this.scrollPosition), 26 + (canScroll ? 0 : 12), 167, 12, 15);
+
+            if (!this.searchField.isFocused() && this.searchField.getText().isEmpty()) {
+                RecipeBookWidget.drawTextWithShadow(matrices, this.client.textRenderer, Text.translatable("gui.recipebook.search_hint").formatted(Formatting.ITALIC).formatted(Formatting.GRAY), x + 25, y + 14, -1);
+            } else {
+                this.searchField.render(matrices, mouseX, mouseY, delta);
+            }
 
             hoveredBundleItemContainer = null;
             for (BundleItemContainer itemContainer : itemContainers) {
@@ -180,7 +226,6 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     private void renderCursorHoverOverlay(MatrixStack matrices, int x, int y, float delta, int mouseX, int mouseY) {
         if (isMouseOver(mouseX, mouseY) && !handler.getCursorStack().isEmpty()) {
-
             fill(matrices, x + 7, y + 7, x + WIDTH - 7, y + HEIGHT - 7, COLOR_CURSOR_HOVER); //-1072689136, -804253680
         }
     }
@@ -230,7 +275,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     }
 
     private void scrollContainers(float position) {
-        int stepPerPage = (storage.size() + 2) / 4;
+        int stepPerPage = (items.size() + 2) / 4;
         int itemPos = (int) ((double) (position * (float) stepPerPage) + 0.5);
 
         if (itemPos < 0) {
@@ -241,8 +286,8 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             for (int column = 0; column < 3; ++column) {
                 int itemIndex = column + (row + itemPos) * 3;
                 BundleItemContainer container = itemContainers.get(column + row * 3);
-                if (itemIndex >= 0 && itemIndex < storage.size()) {
-                    container.setItemStack(storage.get(itemIndex));
+                if (itemIndex >= 0 && itemIndex < items.size()) {
+                    container.setItemStack(items.get(itemIndex));
                 } else {
                     container.setItemStack(ItemStack.EMPTY);
                 }
@@ -261,6 +306,9 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             }
             if (isClickInScrollbar(mouseX, mouseY)) {
                 this.scrolling = true;
+                return true;
+            }
+            if (this.searchField.mouseClicked(mouseX, mouseY, button)) {
                 return true;
             }
 
@@ -302,6 +350,58 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         } else {
             boolean inventory = mouseX < invX || mouseY < invY || mouseX >= (invX + backgroundWidth) || mouseY >= (invY + backgroundHeight);
             return inventory && !isMouseOver(mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        searching = false;
+        return Element.super.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        this.searching = false;
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && narrow) {
+            setOpen(false);
+            return true;
+        }
+        if (searchField.keyPressed(keyCode, scanCode, modifiers)) {
+            refreshSearchResults();
+            return true;
+        }
+        if (searchField.isFocused() && searchField.isVisible() && keyCode != GLFW.GLFW_KEY_ESCAPE) {
+            return true;
+        }
+        if (client.options.chatKey.matchesKey(keyCode, scanCode) && !searchField.isFocused()) {
+            searching = true;
+            searchField.setTextFieldFocused(true);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (this.searching) {
+            return false;
+        }
+        if (!this.isOpen() || this.client.player.isSpectator()) {
+            return false;
+        }
+        if (this.searchField.charTyped(chr, modifiers)) {
+            this.refreshSearchResults();
+            return true;
+        }
+        return Element.super.charTyped(chr, modifiers);
+    }
+
+    private void refreshSearchResults() {
+        String string = searchField.getText().toLowerCase(Locale.ROOT);
+        if (!string.equals(searchText)) {
+            refreshResults(false);
+            scrollContainers(scrollPosition);
+            searchText = string;
         }
     }
 
