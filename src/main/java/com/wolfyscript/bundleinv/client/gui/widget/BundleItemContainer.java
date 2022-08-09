@@ -65,21 +65,37 @@ public class BundleItemContainer extends ClickableWidget {
         if (!handler.getCursorStack().isEmpty()) {
             return false;
         }
+        if (!this.active || !this.visible) {
+            return false;
+        }
+        if (this.isValidClickButton(button) && clicked(mouseX, mouseY)) {
+            this.playDownSound(MinecraftClient.getInstance().getSoundManager());
+
+            int count = Math.min(itemStack.getCount(), itemStack.getMaxCount());
+
+            ItemStack stackToRemove = itemStack.split(button == 0 ? count : count/2);
+            handler.setCursorStack(stackToRemove);
+
+            PacketByteBuf packetBuf = PacketByteBufs.create();
+            packetBuf.writeByte(id);
+            packetBuf.writeInt(stackToRemove.getCount());
+            packetBuf.writeItemStack(stackToRemove);
+            ClientPlayNetworking.send(BundleInvConstants.C2S_BUNDLE_ITEM_CONTAINER_CLICK_PACKET, packetBuf);
+
+            return true;
+        }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        //TODO: Send packet to server to request an item
-        if (handler.getCursorStack().isEmpty()) {
-            ItemStack toSend = itemStack.copy();
-            toSend.setCount(Math.min(toSend.getCount(), toSend.getMaxCount()));
+    protected boolean isValidClickButton(int button) {
+        return super.isValidClickButton(button) || button == 1;
+    }
 
-            PacketByteBuf packetBuf = PacketByteBufs.create();
-            packetBuf.writeByte(id);
-            packetBuf.writeInt(toSend.getMaxCount());
-            packetBuf.writeItemStack(toSend);
-            ClientPlayNetworking.send(BundleInvConstants.C2S_BUNDLE_ITEM_CONTAINER_CLICK_PACKET, packetBuf);
+    @Override
+    public void onClick(double mouseX, double mouseY) {
+        if (handler.getCursorStack().isEmpty()) {
+
         }
     }
 
@@ -88,9 +104,16 @@ public class BundleItemContainer extends ClickableWidget {
         MinecraftClient minecraftClient = MinecraftClient.getInstance();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.setShaderTexture(0, BundleStorageWidget.TEXTURE);
-        this.drawTexture(matrices, this.x, this.y, U, V, this.width, this.height);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.enableDepthTest();
+        drawTexture(matrices, this.x, this.y, U, V, this.width, this.height);
         minecraftClient.getItemRenderer().renderInGuiWithOverrides(itemStack, this.x + 4, this.y + 4);
-        minecraftClient.getItemRenderer().renderGuiItemOverlay(minecraftClient.textRenderer, itemStack, x + 4, y + 4, null);
+        String label = null;
+        if (itemStack.getCount() > 1000) {
+            label = itemStack.getCount() / 1000 + "k";
+        }
+        minecraftClient.getItemRenderer().renderGuiItemOverlay(minecraftClient.textRenderer, itemStack, x + 4, y + 4, label);
     }
 
     @Override

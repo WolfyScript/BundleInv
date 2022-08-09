@@ -32,15 +32,18 @@ public class BundleInv implements ModInitializer {
         });
         ServerPlayNetworking.registerGlobalReceiver(BundleInvConstants.C2S_BUNDLE_STORAGE_STORE_ITEM, (server, player, handler, buf, responseSender) -> {
             boolean cursor = buf.readBoolean();
+            int count = buf.readInt();
             server.executeSync(() -> {
                 if (player.currentScreenHandler == player.playerScreenHandler) {
                     if (cursor) {
                         ItemStack cursorStack = player.playerScreenHandler.getCursorStack();
                         if (cursorStack == null || cursorStack.isEmpty()) return;
                         PlayerBundleStorage storage = ((BundleStorageHolder) player.getInventory()).getBundleStorage();
-                        int remaining = storage.addStack(cursorStack);
-                        //sendBundleStorageUpdate(player, true, cursorStack);
-                        cursorStack.setCount(remaining);
+
+                        ItemStack toAdd = cursorStack.copy();
+                        toAdd.setCount(count);
+                        int remaining = storage.addStack(toAdd);
+                        cursorStack.setCount(cursorStack.getCount() - count + remaining);
                         player.getInventory().markDirty();
                         player.playerScreenHandler.syncState();
                     }
