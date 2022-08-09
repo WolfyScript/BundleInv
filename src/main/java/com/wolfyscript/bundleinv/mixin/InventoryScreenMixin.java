@@ -156,6 +156,10 @@ public abstract class InventoryScreenMixin extends AbstractInventoryScreen<Playe
         return bundleStorage.mouseDragged(mouseX, mouseY, button, deltaX, deltaY) || super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
     }
 
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        bundleStorage.mouseMoved(mouseX, mouseY);
+    }
 
     @Override
     public void refreshWidgets() {

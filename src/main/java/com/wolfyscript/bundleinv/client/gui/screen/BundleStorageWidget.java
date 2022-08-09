@@ -23,6 +23,7 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.search.TextSearchProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
@@ -62,11 +63,13 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     private int cachedInvChangeCount;
 
+    private boolean addItemCursorHover;
+
     private static final int COLOR_CURSOR_HOVER;
 
     static {
-        Color hoverColor = Color.DARK_GRAY;
-        COLOR_CURSOR_HOVER = ColorHelper.Argb.getArgb(190, hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue());
+        Color hoverColor = Color.BLACK;
+        COLOR_CURSOR_HOVER = ColorHelper.Argb.getArgb(210, hoverColor.getRed(), hoverColor.getGreen(), hoverColor.getBlue());
     }
 
     private List<BundleItemContainer> itemContainers;
@@ -197,9 +200,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
             RenderSystem.setShaderTexture(0, TEXTURE);
             RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
-
             drawTexture(matrices, x, y, 0, 0, WIDTH, HEIGHT);
-
             int scrollbarTopX = x + WIDTH - 24;
             int scrollbarTopY = y + 29;
             int scrollbarBottom = scrollbarTopY + 126;
@@ -218,15 +219,30 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
                     hoveredBundleItemContainer = itemContainer;
                 }
             }
-
             renderCursorHoverOverlay(matrices, x, y, delta, mouseX, mouseY);
             matrices.pop();
         }
     }
 
     private void renderCursorHoverOverlay(MatrixStack matrices, int x, int y, float delta, int mouseX, int mouseY) {
-        if (isMouseOver(mouseX, mouseY) && !handler.getCursorStack().isEmpty()) {
+        if (addItemCursorHover) {
             fill(matrices, x + 7, y + 7, x + WIDTH - 7, y + HEIGHT - 7, COLOR_CURSOR_HOVER); //-1072689136, -804253680
+            RenderSystem.setShaderTexture(0, TEXTURE);
+
+            ItemStack existing = storage.getStacks().getIfContains(handler.getCursorStack());
+            if (existing != null) {
+                drawTexture(matrices, x + (WIDTH - 24)/2, y + (HEIGHT - 24)/2, 1, 191, 24, 24);
+                this.setZOffset(100);
+                client.getItemRenderer().zOffset = 100.0f;
+                client.getItemRenderer().renderInGuiWithOverrides(existing, x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4);
+                client.getItemRenderer().renderGuiItemOverlay(client.textRenderer, existing, x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4, null);
+            } else {
+                this.setZOffset(100);
+                client.getItemRenderer().zOffset = 100.0f;
+                client.getItemRenderer().renderInGuiWithOverrides(new ItemStack(Items.BUNDLE), x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4);
+            }
+            this.setZOffset(0);
+            client.getItemRenderer().zOffset = 0.0f;
         }
     }
 
@@ -361,6 +377,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (!isOpen()) return false;
         this.searching = false;
         if (keyCode == GLFW.GLFW_KEY_ESCAPE && narrow) {
             setOpen(false);
@@ -407,9 +424,23 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
+        if (!isOpen()) return false;
         int x = (this.parentWidth - WIDTH) / 2 + this.leftOffset;
         int y = (this.parentHeight - HEIGHT) / 2;
         return mouseX >= x && mouseX < (x + WIDTH) && mouseY >= y && mouseY < (y + HEIGHT);
+    }
+
+    @Override
+    public void mouseMoved(double mouseX, double mouseY) {
+        if (!isOpen()) return;
+        if (!isMouseOver(mouseX, mouseY)) {
+            addItemCursorHover = false;
+            return;
+        }
+        if (!addItemCursorHover && !handler.getCursorStack().isEmpty()) {
+            addItemCursorHover = true;
+
+        }
     }
 
     @Override
