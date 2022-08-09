@@ -25,7 +25,7 @@ public class PlayerBundleStorage implements Clearable {
     public PlayerBundleStorage(PlayerInventory inventory, PlayerEntity player) {
         this.inventory = inventory;
         this.player = player;
-        this.capacity = 64 * 16; // 2048 (32 standard slots) space for all kinds of items
+        this.capacity = 64 * 32; // 2048 (32 standard slots) space for all kinds of items
         this.stacks = IndexedSortedArraySet.create((mid, target) -> {
             int rawIdMid = Item.getRawId(mid.getItem());
             int rawIdTarget = Item.getRawId(target.getItem());
