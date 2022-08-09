@@ -330,20 +330,28 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
             if (!client.player.currentScreenHandler.getCursorStack().isEmpty()) {
                 ItemStack stack = client.player.currentScreenHandler.getCursorStack();
-
-                ItemStack clientStack = stack.copy();
-                int remaining = storage.addStack(clientStack);
-                if (remaining < stack.getCount()) {
-                    clientStack.setCount(remaining);
-                    client.player.currentScreenHandler.setCursorStack(clientStack);
+                int countToAdd = button == 0 ? Math.min(stack.getMaxCount(), stack.getCount()) : 1;
+                ItemStack toAdd = stack.copy();
+                toAdd.setCount(countToAdd);
+                int remaining = storage.addStack(toAdd);
+                if (remaining < countToAdd) {
+                    if (remaining > 0) {
+                        stack.setCount(stack.getCount() - countToAdd + remaining);
+                        addItemCursorHover = true;
+                    } else {
+                        stack.setCount(stack.getCount() - countToAdd);
+                        if (stack.isEmpty()) {
+                            client.player.currentScreenHandler.setCursorStack(ItemStack.EMPTY);
+                            addItemCursorHover = false;
+                        }
+                    }
                     client.player.playSound(SoundEvents.ITEM_BUNDLE_INSERT, SoundCategory.MASTER, 1f, 1f);
-                    BundleInvClient.sendBundleStorageStoreItem(true, stack);
+                    BundleInvClient.sendBundleStorageStoreItem(true, toAdd);
 
                     if (client.currentScreen instanceof InvScreenRefresh inventoryScreen) {
                         inventoryScreen.refreshWidgets();
                     }
                 }
-
             }
         }
         return false;
