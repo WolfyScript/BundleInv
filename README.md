@@ -20,8 +20,9 @@ You can drag and drop items in and out of the secondary and into the primary inv
 For example you can Left-click to store one item, and Right-click to store whole cursor stack.
 
 ### Hover Guide
-When hovering over the BundleInv with an Item on your cursor, it'll show you the existing items already in the inventory if.  
-That way you don't need to know exactly how much you already have of the item without searching for it.
+When hovering over the BundleInv with an Item on your cursor, it'll show you the existing items already in the inventory.    
+Or a Bundle icon in case there is nothing in it yet.  
+That way you know exactly how much you already have of the item without searching for it.
 
 ## Search
 Search items in the Bundle Inventory using the search bar on top.  
