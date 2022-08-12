@@ -14,6 +14,11 @@ The inventory has a limited Bundle Slot Capacity and items take up those slots b
 
 So basically the same as the Bundle, but with a lot more slots at once.
 
+## Small Size
+In order to keep the inventory manageable the GUI for the Bundle Inventory takes up as little as possible and leaves space for the status effect icons on smaller screens.  
+It automatically hides when opening the Recipe Book.  
+<img src="./docs/assets/open_recipe_book_and_effects.gif" height=240>
+
 ## Functionality
 It is designed to integrate with the primary inventory and supports basic functionalities.  
 You can drag and drop items in and out of the secondary and into the primary inventory, and the other way around.  
@@ -22,11 +27,13 @@ For example you can Left-click to store one item, and Right-click to store whole
 ### Hover Guide
 When hovering over the BundleInv with an Item on your cursor, it'll show you the existing items already in the inventory.    
 Or a Bundle icon in case there is nothing in it yet.  
-That way you know exactly how much you already have of the item without searching for it.
+That way you know exactly how much you already have of the item without searching for it.  
+<img src="./docs/assets/hover_guide.gif" height=240>
 
 ## Search
 Search items in the Bundle Inventory using the search bar on top.  
 This takes the display name and lore of the item into account, so you can look for your renamed items.
+<img src="./docs/assets/search.gif" height=240>
 
 ## Planned & WIP Features
 
