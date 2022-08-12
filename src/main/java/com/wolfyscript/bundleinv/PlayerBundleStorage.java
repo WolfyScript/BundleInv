@@ -11,6 +11,8 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.Clearable;
 
 public class PlayerBundleStorage implements Clearable {
@@ -161,7 +163,7 @@ public class PlayerBundleStorage implements Clearable {
     private boolean canStackAddMore(ItemStack existingStack, ItemStack stack) {
         //Make sure the items can stack as much as possible to remove clutter
         //This is not the standard inventory where you can move items around anyway, so big stack sizes are ok.
-        return !existingStack.isEmpty() && ItemStack.canCombine(existingStack, stack) && this.getRemainingCapacity() > getItemOccupancy(existingStack);
+        return !existingStack.isEmpty() && ItemStack.canCombine(existingStack, stack) && this.getRemainingCapacity() >= getItemOccupancy(existingStack);
     }
 
     private static int getItemOccupancy(ItemStack stack) {
@@ -175,6 +177,29 @@ public class PlayerBundleStorage implements Clearable {
                 }
             }
             return 64 / stack.getMaxCount();
+        }
+    }
+
+    public NbtCompound writeNbt(NbtCompound compound) {
+        //This uses a compound in case we need to save more settings in the future!
+        NbtList items = new NbtList();
+        stacks.forEach(itemStack -> {
+            NbtCompound entry = new NbtCompound();
+            itemStack.writeNbt(entry);
+            items.add(entry);
+        });
+        compound.put("items", items);
+        return compound;
+    }
+
+    public void readNbt(NbtCompound compound) {
+        clear();
+        NbtList items = compound.getList("items", NbtElement.COMPOUND_TYPE);
+        for (int i = 0; i < items.size(); i++) {
+            NbtCompound element = items.getCompound(i);
+            ItemStack itemStack = ItemStack.fromNbt(element);
+            if (itemStack.isEmpty()) continue;
+            addStack(itemStack);
         }
     }
 
