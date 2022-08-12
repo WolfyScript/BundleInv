@@ -3,6 +3,7 @@ package com.wolfyscript.bundleinv.client;
 import com.wolfyscript.bundleinv.BundleInvConstants;
 import com.wolfyscript.bundleinv.BundleStorageHolder;
 import com.wolfyscript.bundleinv.client.gui.screen.InvScreenRefresh;
+import com.wolfyscript.bundleinv.network.packets.BundleStorageDataPacket;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
@@ -32,6 +33,7 @@ public class BundleInvClient implements ClientModInitializer {
                 }
            });
         });
+        BundleStorageDataPacket.registerClientReceiver(this);
     }
 
     public static void sendBundleStorageStoreItem(boolean cursor, ItemStack itemStack) {

@@ -1,5 +1,6 @@
 package com.wolfyscript.bundleinv;
 
+import com.wolfyscript.bundleinv.network.packets.BundleStorageDataPacket;
 import com.wolfyscript.bundleinv.util.collection.IndexedSortedArraySet;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -49,12 +50,14 @@ public class BundleInv implements ModInitializer {
                     }
                 }
             });
-
         });
+        BundleStorageDataPacket.registerServerReceiver(this);
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             //Send bundle storage to client
-            IndexedSortedArraySet<ItemStack> stacks = ((BundleStorageHolder) handler.player.getInventory()).getBundleStorage().getStacks();
+            PlayerBundleStorage bundleStorage = ((BundleStorageHolder) handler.player.getInventory()).getBundleStorage();
+            IndexedSortedArraySet<ItemStack> stacks = bundleStorage.getStacks();
+            BundleStorageDataPacket.sendToClient(handler.player, bundleStorage.isOpen());
             for (ItemStack stack : stacks) {
                 sendBundleStorageUpdate(handler.player, true, stack);
             }

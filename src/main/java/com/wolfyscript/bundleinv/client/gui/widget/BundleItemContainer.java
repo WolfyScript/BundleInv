@@ -2,7 +2,6 @@ package com.wolfyscript.bundleinv.client.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.wolfyscript.bundleinv.BundleInvConstants;
-import com.wolfyscript.bundleinv.client.gui.screen.BundleStorageWidget;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.client.MinecraftClient;
@@ -20,7 +19,7 @@ public class BundleItemContainer extends ClickableWidget {
     private static final int U = 1, V = 167;
     public static final int WIDTH = 24, HEIGHT = 24;
 
-    private PlayerScreenHandler handler;
+    private final PlayerScreenHandler handler;
     private final int x;
     private final int y;
     private final int id;

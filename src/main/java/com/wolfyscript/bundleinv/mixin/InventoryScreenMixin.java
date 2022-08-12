@@ -1,7 +1,7 @@
 package com.wolfyscript.bundleinv.mixin;
 
 import com.wolfyscript.bundleinv.client.gui.screen.AbstractInventoryScreenInterface;
-import com.wolfyscript.bundleinv.client.gui.screen.BundleStorageWidget;
+import com.wolfyscript.bundleinv.client.gui.widget.BundleStorageWidget;
 import com.wolfyscript.bundleinv.client.gui.screen.InvScreenRefresh;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,7 +14,6 @@ import net.minecraft.client.gui.widget.TexturedButtonWidget;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.network.packet.c2s.play.ClickSlotC2SPacket;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;

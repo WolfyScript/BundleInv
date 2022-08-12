@@ -1,10 +1,12 @@
-package com.wolfyscript.bundleinv.client.gui.screen;
+package com.wolfyscript.bundleinv.client.gui.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.wolfyscript.bundleinv.BundleStorageHolder;
 import com.wolfyscript.bundleinv.PlayerBundleStorage;
 import com.wolfyscript.bundleinv.client.BundleInvClient;
-import com.wolfyscript.bundleinv.client.gui.widget.BundleItemContainer;
+import com.wolfyscript.bundleinv.client.gui.screen.AbstractInventoryScreenInterface;
+import com.wolfyscript.bundleinv.client.gui.screen.InvScreenRefresh;
+import com.wolfyscript.bundleinv.network.packets.BundleStorageDataPacket;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +65,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     private int cachedInvChangeCount;
 
-    private boolean addItemCursorHover;
+    boolean addItemCursorHover;
 
     private static final int COLOR_CURSOR_HOVER;
 
@@ -91,6 +93,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         if (items == null) {
             items = List.of();
         }
+        this.open = storage.isOpen();
 
         if (open) {
             reset();
@@ -98,6 +101,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     }
 
     public void update() {
+        setOpen(storage.isOpen());
         if (!isOpen()) {
             return;
         }
@@ -163,9 +167,8 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         if (client.currentScreen instanceof AbstractInventoryScreenInterface screenInterface1) {
             screenInterface1.setLeftWidth(open ? WIDTH + 1 : 0);
         }
-        if (open) {
-            reset();
-        }
+        storage.setOpen(open);
+        BundleStorageDataPacket.sendToServer(open);
     }
 
     public void toggleOpen() {
@@ -310,7 +313,6 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
                 container.checkVisibility();
             }
         }
-
     }
 
     @Override
@@ -318,7 +320,12 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
         if (this.isOpen() && !this.client.player.isSpectator()) {
             if (!isMouseOver(mouseX, mouseY)) return false;
             for (BundleItemContainer container : itemContainers) {
-                if (container.mouseClicked(mouseX, mouseY, button)) return true;
+                if (container.mouseClicked(mouseX, mouseY, button)) {
+                    if (!handler.getCursorStack().isEmpty()) {
+                        addItemCursorHover = true;
+                    }
+                    return true;
+                }
             }
             if (isClickInScrollbar(mouseX, mouseY)) {
                 this.scrolling = true;

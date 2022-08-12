@@ -20,6 +20,7 @@ public class PlayerBundleStorage implements Clearable {
     private final PlayerEntity player;
     private final IndexedSortedArraySet<ItemStack> stacks;
     private final PlayerInventory inventory;
+    private boolean open;
 
     private final int capacity;
     private int load;
@@ -48,6 +49,14 @@ public class PlayerBundleStorage implements Clearable {
 
     public boolean isEmpty() {
         return stacks.isEmpty();
+    }
+
+    public boolean isOpen() {
+        return open;
+    }
+
+    public void setOpen(boolean open) {
+        this.open = open;
     }
 
     public IndexedSortedArraySet<ItemStack> getStacks() {
@@ -181,7 +190,7 @@ public class PlayerBundleStorage implements Clearable {
     }
 
     public NbtCompound writeNbt(NbtCompound compound) {
-        //This uses a compound in case we need to save more settings in the future!
+        compound.putBoolean("open", open);
         NbtList items = new NbtList();
         stacks.forEach(itemStack -> {
             NbtCompound entry = new NbtCompound();
@@ -194,6 +203,7 @@ public class PlayerBundleStorage implements Clearable {
 
     public void readNbt(NbtCompound compound) {
         clear();
+        setOpen(compound.getBoolean("open"));
         NbtList items = compound.getList("items", NbtElement.COMPOUND_TYPE);
         for (int i = 0; i < items.size(); i++) {
             NbtCompound element = items.getCompound(i);
