@@ -1,5 +1,5 @@
 # BundleInv
-This mod as the name suggests combines the idea of the Bundle and inventory extension, to improve the inventory of Minecraft.
+This mod as the name suggests combines the idea of the Bundle and inventory expansion, to improve the inventory of Minecraft.
 
 It adds a whole secondary Bundle Inventory.  
 This Bundle Inventory acts very similar to the Bundle, as it has a max amount of inventory space, but no limit on Item types.  
