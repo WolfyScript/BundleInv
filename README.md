@@ -15,7 +15,7 @@ The inventory has a limited Bundle Slot Capacity and items take up those slots b
 So basically the same as the Bundle, but with a lot more slots at once.
 
 ## Small Size
-In order to keep the inventory manageable the GUI for the Bundle Inventory takes up as little as possible and leaves space for the status effect icons on smaller screens.  
+In order to keep the inventory manageable the GUI for the Bundle Inventory takes up as little space as possible and leaves space for the status effect icons on smaller screens.  
 It automatically hides when opening the Recipe Book.  
 <img src="./docs/assets/open_recipe_book_and_effects.gif" height=240>
 
