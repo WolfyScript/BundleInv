@@ -13,6 +13,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.screen.PlayerScreenHandler;
 import net.minecraft.screen.ScreenTexts;
+import org.jetbrains.annotations.NotNull;
 
 public class BundleItemContainer extends ClickableWidget {
 
@@ -47,8 +48,8 @@ public class BundleItemContainer extends ClickableWidget {
         return id;
     }
 
-    public void setItemStack(ItemStack itemStack) {
-        this.itemStack = itemStack.copy();
+    public void setItemStack(@NotNull ItemStack itemStack) {
+        this.itemStack = itemStack;
     }
 
     public void checkVisibility() {

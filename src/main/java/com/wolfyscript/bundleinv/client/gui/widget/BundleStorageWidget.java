@@ -230,17 +230,19 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     private void renderCursorHoverOverlay(MatrixStack matrices, int x, int y, float delta, int mouseX, int mouseY) {
         if (addItemCursorHover) {
-            fill(matrices, x + 7, y + 7, x + WIDTH - 7, y + HEIGHT - 7, COLOR_CURSOR_HOVER); //-1072689136, -804253680
+            fill(matrices, x + 7, y + 7, x + WIDTH - 7, y + HEIGHT - 7, COLOR_CURSOR_HOVER);
             RenderSystem.setShaderTexture(0, TEXTURE);
 
             ItemStack existing = storage.getStacks().getIfContains(handler.getCursorStack());
             if (existing != null) {
+                // Draw item slot with existing stack
                 drawTexture(matrices, x + (WIDTH - 24)/2, y + (HEIGHT - 24)/2, 1, 191, 24, 24);
                 this.setZOffset(100);
                 client.getItemRenderer().zOffset = 100.0f;
                 client.getItemRenderer().renderInGuiWithOverrides(existing, x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4);
                 client.getItemRenderer().renderGuiItemOverlay(client.textRenderer, existing, x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4, null);
             } else {
+                // Draw Bundle itemgim
                 this.setZOffset(100);
                 client.getItemRenderer().zOffset = 100.0f;
                 client.getItemRenderer().renderInGuiWithOverrides(new ItemStack(Items.BUNDLE), x + (WIDTH - 24)/2 + 4, y + (HEIGHT - 24)/2 + 4);
@@ -252,7 +254,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
     public void drawTooltip(MatrixStack matrices, int x, int y, int mouseX, int mouseY) {
         if (this.isOpen() && handler.getCursorStack().isEmpty()) {
-            if (hoveredBundleItemContainer != null) {
+            if (hoveredBundleItemContainer != null && !hoveredBundleItemContainer.getItemStack().isEmpty()) {
                 List<Text> text = client.currentScreen.getTooltipFromItem(hoveredBundleItemContainer.getItemStack());
                 if (this.client.currentScreen != null) {
                     this.client.currentScreen.renderTooltip(matrices, text, mouseX, mouseY);
@@ -307,7 +309,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
                 int itemIndex = column + (row + rowPos) * 3;
                 BundleItemContainer container = itemContainers.get(column + row * 3);
                 if (itemIndex >= 0 && itemIndex < items.size()) {
-                    container.setItemStack(items.get(itemIndex));
+                    container.setItemStack(items.get(itemIndex).copy());
                 } else {
                     container.setItemStack(ItemStack.EMPTY);
                 }
