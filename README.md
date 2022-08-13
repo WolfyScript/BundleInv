@@ -1,4 +1,7 @@
 # BundleInv
+<div align="center">
+  <img src="./docs/assets/bundleinv_title.png" width=512 alt="title">
+</div>
 This mod as the name suggests combines the idea of the Bundle and inventory expansion, to improve the inventory of Minecraft.
 
 It adds a whole secondary Bundle Inventory.  
