@@ -17,6 +17,7 @@ import net.minecraft.client.gui.Drawable;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.Selectable;
+import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.narration.NarrationMessageBuilder;
 import net.minecraft.client.gui.screen.recipebook.RecipeBookWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
@@ -273,7 +274,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
 
             int scrollBarTopY = y + 29;
             int scrollBarBottomY = scrollBarTopY + 124;
-            this.scrollPosition = ((float) mouseY - (float) scrollBarTopY - 7.5f) / ((float) (scrollBarBottomY - scrollBarTopY) - 15f);
+            this.scrollPosition = ((float) mouseY - scrollBarTopY - 7.5f) / ((float)(scrollBarBottomY - scrollBarTopY) - 15f);
             this.scrollPosition = MathHelper.clamp(this.scrollPosition, 0.0f, 1f);
 
             scrollContainers(this.scrollPosition);
@@ -286,24 +287,24 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double amount) {
         if (!canScroll) return false;
-        int stepPerPage = (storage.size() + 2) / 4;
-        float value = (float) (amount / stepPerPage);
+        int steps = (storage.size() + 3 - 1) / 3-5;
+        float value = (float) (amount / steps);
         this.scrollPosition = MathHelper.clamp(this.scrollPosition - value, 0.0f, 1f);
         scrollContainers(scrollPosition);
         return true;
     }
 
     private void scrollContainers(float position) {
-        int stepPerPage = (items.size() + 2) / 4;
-        int itemPos = (int) ((double) (position * (float) stepPerPage) + 0.5);
+        int steps = (items.size() + 3 - 1) / 3-5;
+        int rowPos = (int) ((double) (position * (float) steps) + 0.5);
 
-        if (itemPos < 0) {
-            itemPos = 0;
+        if (rowPos < 0) {
+            rowPos = 0;
         }
 
         for (int row = 0; row < 5; ++row) {
             for (int column = 0; column < 3; ++column) {
-                int itemIndex = column + (row + itemPos) * 3;
+                int itemIndex = column + (row + rowPos) * 3;
                 BundleItemContainer container = itemContainers.get(column + row * 3);
                 if (itemIndex >= 0 && itemIndex < items.size()) {
                     container.setItemStack(items.get(itemIndex));
@@ -324,6 +325,7 @@ public class BundleStorageWidget extends DrawableHelper implements Drawable, Ele
                     if (!handler.getCursorStack().isEmpty()) {
                         addItemCursorHover = true;
                     }
+                    reset();
                     return true;
                 }
             }
