@@ -20,7 +20,7 @@ So basically the same as the Bundle, but with a lot more slots at once.
 ## Small Size
 In order to keep the inventory manageable the GUI for the Bundle Inventory takes up as little space as possible and leaves space for the status effect icons on smaller screens.  
 It automatically hides when opening the Recipe Book.  
-<img src="./docs/assets/open_recipe_book_and_effects.gif" height=240>
+<img src="./docs/assets/open_recipe_book_and_effects.gif" width="70%">
 
 ## Functionality
 It is designed to integrate with the primary inventory and supports basic functionalities.  
@@ -31,12 +31,19 @@ For example you can Left-click to store one item, and Right-click to store whole
 When hovering over the BundleInv with an Item on your cursor, it'll show you the existing items already in the inventory.    
 Or a Bundle icon in case there is nothing in it yet.  
 That way you know exactly how much you already have of the item without searching for it.  
-<img src="./docs/assets/hover_guide.gif" height=240>
+<img src="./docs/assets/hover_guide.gif" width="45%">
 
 ## Search
 Search items in the Bundle Inventory using the search bar on top.  
 This takes the display name and lore of the item into account, so you can look for your renamed items.
-<img src="./docs/assets/search.gif" height=240>
+<img src="./docs/assets/search.gif" width="45%">
+
+## Pick-Block
+Pick-Block (`Middle-Click on Block`) puts the picked block into the hotbar and selects it. 
+If the item already exists inside the Hotbar, it selects it and tries to replenish it with items from the Bundle Inventory.  
+In case no such item is inside the Hotbar, then it takes the maximum amount of that item from the Bundle Inventory and puts 
+it into the Hotbar, wherever is space, otherwise swaps items from the hotbar with the item from the Bundle Inventory.  
+<img src="./docs/assets/pick_block.gif" width="40%">
 
 ## Planned & WIP Features
 
@@ -50,11 +57,6 @@ This takes the display name and lore of the item into account, so you can look f
 
 #### Upper-Inventory
 `Ctrl-Shift-Click`: upper inventory -> secondary (Since shift-click would move it into primary)
-
-#### Pick-Block
-Pick-Block takes the max possible stack-amount of the picked block out of secondary inventory and puts it into the hotbar, when there is space.
-If there is no space, but the item you are holding is the item you picked, then it tries to up that stack to the max-stack possible.
-Otherwise, switches cursor to item in hotbar.
 
 ## Possible Future Features
 - Pin items, that are always shown first in the list.
