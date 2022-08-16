@@ -2,7 +2,7 @@ package com.wolfyscript.bundleinv;
 
 import com.google.common.base.Objects;
 import com.wolfyscript.bundleinv.util.collection.IndexedSortedArraySet;
-import java.util.Iterator;
+import it.unimi.dsi.fastutil.ints.IntHeapIndirectPriorityQueue;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
@@ -78,49 +78,33 @@ public class PlayerBundleStorage implements Clearable {
         return removed;
     }
 
-    public ItemStack removeStack(int slot, int amount) {
-        if (size() <= slot || slot < 0) return ItemStack.EMPTY;
-        int index = 0;
-        Iterator<ItemStack> iterator = stacks.iterator();
-        while(iterator.hasNext()) {
-            ItemStack current = iterator.next();
-            if (index == slot) {
-                ItemStack removed = current.split(amount);
-                load -= getItemOccupancy(removed) * removed.getCount();
-                if (current.isEmpty()) {
-                    iterator.remove();
-                }
-                return removed;
-            }
-            index++;
-        }
-        return ItemStack.EMPTY;
+    /**
+     * Removes the max possible amount of the item.<br>
+     * The amount is the minimum of the actual items count and max count.
+     *
+     * @param stack The ItemStack to remove.
+     * @return The removed ItemStack; or EMPTY when index is out of bounds or item is empty.
+     */
+    public ItemStack removeMaxStack(ItemStack stack) {
+        return removeStack(stack, stack.getMaxCount());
     }
 
-    public ItemStack removeStack(int slot) {
-        if (size() <= slot || slot < 0) return ItemStack.EMPTY;
-        int index = 0;
-        Iterator<ItemStack> iterator = stacks.iterator();
-        while(iterator.hasNext()) {
-            ItemStack itemStack = iterator.next();
-            if (index == slot) {
-                int count = itemStack.getCount();
-                if (count > itemStack.getMaxCount()) {
-                    int maxCount = itemStack.getMaxCount();
-                    load -= getItemOccupancy(itemStack) * maxCount;
-                    itemStack.setCount(count - maxCount);
+    public ItemStack removeStack(int index, int amount) {
+        if (size() <= index || index < 0) return ItemStack.EMPTY;
+        return removeStack(get(index), amount);
+    }
 
-                    ItemStack returnValue = itemStack.copy();
-                    returnValue.setCount(maxCount);
-                    return returnValue;
-                }
-                load -= getItemOccupancy(itemStack) * count;
-                iterator.remove();
-                return itemStack;
-            }
-            index++;
-        }
-        return ItemStack.EMPTY;
+    /**
+     * Removes the max possible amount of the item, at that index in the Bundle.<br>
+     * The amount is the minimum of the actual items count and max count.
+     *
+     * @param index The index of the item in the Bundle.
+     * @return The removed ItemStack; or EMPTY when index is out of bounds or item is empty.
+     */
+    public ItemStack removeMaxStack(int index) {
+        if (size() <= index || index < 0) return ItemStack.EMPTY;
+        ItemStack toRemove = get(index);
+        return removeStack(toRemove, toRemove.getMaxCount());
     }
 
     @Override
@@ -187,6 +171,10 @@ public class PlayerBundleStorage implements Clearable {
             }
             return 64 / stack.getMaxCount();
         }
+    }
+
+    public static int getItemStackLoad(ItemStack stack) {
+        return getItemOccupancy(stack) * stack.getCount();
     }
 
     public NbtCompound writeNbt(NbtCompound compound) {
