@@ -8,7 +8,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.crash.CrashReport;
 import net.minecraft.util.hit.HitResult;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,9 +23,6 @@ public abstract class MixinMinecraftClient {
     @Shadow
     @Nullable
     public ClientPlayerEntity player;
-
-    @Shadow
-    public abstract CrashReport addDetailsToCrashReport(CrashReport report);
 
     @Inject(method = "doItemPick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getSlotWithStack(Lnet/minecraft/item/ItemStack;)I", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILEXCEPTION, cancellable = true)
     private void pickItemFromBundleInventory(CallbackInfo ci, boolean creative, BlockEntity blockEntity, ItemStack itemStack, HitResult.Type type, PlayerInventory playerInventory) {
