@@ -69,20 +69,10 @@ public class BundleInv implements ModInitializer {
 
                 if (!hotbarItem.isEmpty()) {
                     // The hotbar item needs to be swapped. The hotbar and bundle item can have different load factors inside the bundle inventory, so they might not be able to swap!
+                    int bundleItemLoad = PlayerBundleStorage.getItemStackLoad(bundleStack);
+                    int hotbarItemLoad = PlayerBundleStorage.getItemStackLoad(hotbarItem);
 
-                    int bundleOccupancy = PlayerBundleStorage.getItemOccupancy(bundleStack);
-                    int hotbarOccupancy = PlayerBundleStorage.getItemOccupancy(hotbarItem);
-
-                    int toGetLoad = bundleOccupancy * bundleStack.getCount();
-                    int hotbarLoad = hotbarOccupancy * hotbarItem.getCount();
-                    int remainingCapacity = bundleStorage.getRemainingCapacity() - toGetLoad;
-
-                    if ( remainingCapacity < hotbarLoad ) {
-                        //TODO: There would be no space for the swapped items! what do?
-                        int remainingLoad = toGetLoad - hotbarLoad;
-                        int countLeft = remainingLoad / hotbarOccupancy;
-
-                    } else {
+                    if (bundleStorage.getRemainingCapacity() - bundleItemLoad >= hotbarItemLoad) {
                         inventory.selectedSlot = hotbarSlot;
                         bundleStorage.addStack(hotbarItem);
                         inventory.setStack(hotbarSlot, bundleStack);
@@ -90,6 +80,9 @@ public class BundleInv implements ModInitializer {
                         sendBundleStorageUpdate(player, false, bundleStack);
                         handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
                         handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
+                    } else {
+                        // There would be no space for the swapped items! what do?
+                        // For now, do nothing, maybe I find a solution later on.
                     }
                 } else {
                     // Move item from Bundle into the hotbar slot

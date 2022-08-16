@@ -22,7 +22,7 @@ public class MixinMinecraftClient {
 
     @Shadow @Nullable public ClientPlayerEntity player;
 
-    @Inject(method = "doItemPick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getSlotWithStack(Lnet/minecraft/item/ItemStack;)I", shift = At.Shift.AFTER, by = 2), locals = LocalCapture.CAPTURE_FAILEXCEPTION, cancellable = true)
+    @Inject(method = "doItemPick", at = @At(value = "INVOKE", target = "Lnet/minecraft/entity/player/PlayerInventory;getSlotWithStack(Lnet/minecraft/item/ItemStack;)I", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILEXCEPTION, cancellable = true)
     private void pickItemFromBundleInventory(CallbackInfo ci, boolean creative, BlockEntity blockEntity, ItemStack itemStack, HitResult.Type type, PlayerInventory playerInventory) {
         assert player != null;
         int itemSlot = playerInventory.getSlotWithStack(itemStack);
@@ -30,6 +30,7 @@ public class MixinMinecraftClient {
             if (itemSlot == -1) {
                 if (PlayerInventory.isValidHotbarIndex(itemSlot)) {
                     //TODO: Replenish stack!
+
 
                 } else {
                     PlayerBundleStorage bundleStorage = ((BundleStorageHolder)player.getInventory()).getBundleStorage();

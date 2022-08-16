@@ -112,6 +112,13 @@ public class PlayerBundleStorage implements Clearable {
         stacks.clear();
     }
 
+    /**
+     * Gets the ItemStack at the specified index in the storage.
+     *
+     * @param index The index of the ItemStack.
+     * @return The ItemStack at the index in the storage; otherwise {@link ItemStack#EMPTY} if item not available.
+     * @throws IndexOutOfBoundsException If the index is out of bounds.
+     */
     public ItemStack get(int index) {
         ItemStack itemStack = stacks.get(index);
         if (itemStack == null) {
@@ -165,7 +172,7 @@ public class PlayerBundleStorage implements Clearable {
             slot = (inventory.selectedSlot + i) % 9;
             if (inventory.main.get(slot).isEmpty()) return slot;
         }
-        // Find the best item to swap with the
+        // Find the best item to swap with
         int stackLoad = PlayerBundleStorage.getItemStackLoad(stack);
         int[] loadDiffs = new int[9];
         for (int i = 0; i < 9; ++i) {
