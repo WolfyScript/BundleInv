@@ -10,7 +10,10 @@
   "client": [
     "AbstractInventoryScreenMixin",
     "InventoryScreenMixin",
+    "MixinMinecraftClient",
     "ScreenAccessor"
+  ],
+  "server": [
   ],
   "injectors": {
     "defaultRequire": 1

@@ -6,8 +6,11 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class BundleInv implements ModInitializer {
@@ -52,7 +55,52 @@ public class BundleInv implements ModInitializer {
             });
         });
         BundleStorageDataPacket.registerServerReceiver(this);
+        ServerPlayNetworking.registerGlobalReceiver(BundleInvConstants.C2S_PICK_FROM_BUNDLE_STORAGE, (server, player, handler, buf, responseSender) -> {
+            ItemStack stackPicked = buf.readItemStack();
 
+            server.executeSync(() -> {
+                PlayerInventory inventory = player.getInventory();
+                PlayerBundleStorage bundleStorage = ((BundleStorageHolder) inventory).getBundleStorage();
+
+                ItemStack bundleStack = bundleStorage.removeMaxStack(stackPicked);
+
+                int hotbarSlot = bundleStorage.getSwappableHotbarSlotFor(bundleStack);
+                ItemStack hotbarItem = inventory.getStack(hotbarSlot);
+
+                if (!hotbarItem.isEmpty()) {
+                    // The hotbar item needs to be swapped. The hotbar and bundle item can have different load factors inside the bundle inventory, so they might not be able to swap!
+
+                    int bundleOccupancy = PlayerBundleStorage.getItemOccupancy(bundleStack);
+                    int hotbarOccupancy = PlayerBundleStorage.getItemOccupancy(hotbarItem);
+
+                    int toGetLoad = bundleOccupancy * bundleStack.getCount();
+                    int hotbarLoad = hotbarOccupancy * hotbarItem.getCount();
+                    int remainingCapacity = bundleStorage.getRemainingCapacity() - toGetLoad;
+
+                    if ( remainingCapacity < hotbarLoad ) {
+                        //TODO: There would be no space for the swapped items! what do?
+                        int remainingLoad = toGetLoad - hotbarLoad;
+                        int countLeft = remainingLoad / hotbarOccupancy;
+
+                    } else {
+                        inventory.selectedSlot = hotbarSlot;
+                        bundleStorage.addStack(hotbarItem);
+                        inventory.setStack(hotbarSlot, bundleStack);
+                        sendBundleStorageUpdate(player, true, hotbarItem);
+                        sendBundleStorageUpdate(player, false, bundleStack);
+                        handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
+                        handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
+                    }
+                } else {
+                    // Move item from Bundle into the hotbar slot
+                    inventory.selectedSlot = hotbarSlot;
+                    inventory.setStack(hotbarSlot, bundleStack);
+                    sendBundleStorageUpdate(player, false, bundleStack);
+                    handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
+                    handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
+                }
+            });
+        });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             //Send bundle storage to client
             PlayerBundleStorage bundleStorage = ((BundleStorageHolder) handler.player.getInventory()).getBundleStorage();
