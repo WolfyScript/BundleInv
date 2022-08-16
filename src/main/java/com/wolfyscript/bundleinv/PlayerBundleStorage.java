@@ -159,7 +159,34 @@ public class PlayerBundleStorage implements Clearable {
         return !existingStack.isEmpty() && ItemStack.canCombine(existingStack, stack) && this.getRemainingCapacity() >= getItemOccupancy(existingStack);
     }
 
-    private static int getItemOccupancy(ItemStack stack) {
+    public int getSwappableHotbarSlotFor(ItemStack stack) {
+        int slot;
+        for (int i = 0; i < 9; ++i) {
+            slot = (inventory.selectedSlot + i) % 9;
+            if (inventory.main.get(slot).isEmpty()) return slot;
+        }
+        // Find the best item to swap with the
+        int stackLoad = PlayerBundleStorage.getItemStackLoad(stack);
+        int[] loadDiffs = new int[9];
+        for (int i = 0; i < 9; ++i) {
+            slot = (inventory.selectedSlot + i) % 9;
+            ItemStack slotStack = inventory.main.get(slot);
+            int load = PlayerBundleStorage.getItemStackLoad(slotStack);
+            loadDiffs[i] = load - stackLoad;
+        }
+        IntHeapIndirectPriorityQueue loadQueue = new IntHeapIndirectPriorityQueue(loadDiffs);
+        for (int i = 0; i < 9; i++) {
+            loadQueue.enqueue(i);
+        }
+        // We use a priority queue to swap the item, that requires the smallest amount of space in the bundle inventory and isn't enchanted.
+        for (int i = 0; i < loadQueue.size(); i++) {
+            slot = (inventory.selectedSlot + loadQueue.dequeue()) % 9;
+            if (!inventory.main.get(slot).hasEnchantments()) return slot;
+        }
+        return inventory.selectedSlot;
+    }
+
+    public static int getItemOccupancy(ItemStack stack) {
         if (stack.isOf(Items.BUNDLE)) {
             return 4 + (int) Math.floor(BundleItem.getAmountFilled(stack) * 64);
         } else {
