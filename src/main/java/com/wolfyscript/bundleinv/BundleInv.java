@@ -1,6 +1,7 @@
 package com.wolfyscript.bundleinv;
 
 import com.wolfyscript.bundleinv.network.packets.BundleStorageDataPacket;
+import com.wolfyscript.bundleinv.network.packets.C2SPickFromBundleStorage;
 import com.wolfyscript.bundleinv.util.collection.IndexedSortedArraySet;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
@@ -56,41 +57,60 @@ public class BundleInv implements ModInitializer {
         });
         BundleStorageDataPacket.registerServerReceiver(this);
         ServerPlayNetworking.registerGlobalReceiver(BundleInvConstants.C2S_PICK_FROM_BUNDLE_STORAGE, (server, player, handler, buf, responseSender) -> {
+            C2SPickFromBundleStorage.Action action = buf.readEnumConstant(C2SPickFromBundleStorage.Action.class);
+            int hotbarSlot = buf.readInt();
             ItemStack stackPicked = buf.readItemStack();
 
             server.executeSync(() -> {
                 PlayerInventory inventory = player.getInventory();
                 PlayerBundleStorage bundleStorage = ((BundleStorageHolder) inventory).getBundleStorage();
 
-                ItemStack bundleStack = bundleStorage.removeMaxStack(stackPicked);
+                if (action.equals(C2SPickFromBundleStorage.Action.REPLENISH)) {
+                    ItemStack hotbarStack = inventory.getStack(hotbarSlot);
+                    if (hotbarStack.getCount() >= hotbarStack.getMaxCount()) return;
+                    int remaining = hotbarStack.getMaxCount() - hotbarStack.getCount();
+                    if (remaining > 0) {
+                        int index = bundleStorage.indexOf(hotbarStack);
+                        if (index != -1) {
+                            ItemStack removed = bundleStorage.removeStack(index, remaining);
+                            inventory.selectedSlot = hotbarSlot;
+                            hotbarStack.setCount(hotbarStack.getCount() + removed.getCount());
 
-                int hotbarSlot = bundleStorage.getSwappableHotbarSlotFor(bundleStack);
-                ItemStack hotbarItem = inventory.getStack(hotbarSlot);
+                            sendBundleStorageUpdate(player, false, removed);
+                            handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
+                            handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
+                        }
+                    }
+                } else {
+                    ItemStack bundleStack = bundleStorage.removeMaxStack(stackPicked);
+                    int updatedHotbarSlot = bundleStorage.getSwappableHotbarSlotFor(bundleStack);
+                    ItemStack hotbarItem = inventory.getStack(updatedHotbarSlot);
 
-                if (!hotbarItem.isEmpty()) {
-                    // The hotbar item needs to be swapped. The hotbar and bundle item can have different load factors inside the bundle inventory, so they might not be able to swap!
-                    int bundleItemLoad = PlayerBundleStorage.getItemStackLoad(bundleStack);
-                    int hotbarItemLoad = PlayerBundleStorage.getItemStackLoad(hotbarItem);
+                    if (!hotbarItem.isEmpty()) {
+                        // The hotbar item needs to be swapped. The hotbar and bundle item can have different load factors inside the bundle inventory, so they might not be able to swap!
+                        int bundleItemLoad = PlayerBundleStorage.getItemStackLoad(bundleStack);
+                        int hotbarItemLoad = PlayerBundleStorage.getItemStackLoad(hotbarItem);
 
-                    if (bundleStorage.getRemainingCapacity() - bundleItemLoad >= hotbarItemLoad) {
-                        inventory.selectedSlot = hotbarSlot;
-                        bundleStorage.addStack(hotbarItem);
-                        inventory.setStack(hotbarSlot, bundleStack);
-                        sendBundleStorageUpdate(player, true, hotbarItem);
+                        if (bundleStorage.getRemainingCapacity() - bundleItemLoad >= hotbarItemLoad) {
+                            inventory.selectedSlot = updatedHotbarSlot;
+                            bundleStorage.addStack(hotbarItem);
+                            inventory.setStack(updatedHotbarSlot, bundleStack);
+                            sendBundleStorageUpdate(player, true, hotbarItem);
+                            sendBundleStorageUpdate(player, false, bundleStack);
+                            handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
+                            handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
+                        } else {
+                            // There would be no space for the swapped items! what do?
+                            // For now, do nothing, maybe I find a solution later on.
+                        }
+                    } else {
+                        // Move item from Bundle into the hotbar slot
+                        inventory.selectedSlot = updatedHotbarSlot;
+                        inventory.setStack(updatedHotbarSlot, bundleStack);
                         sendBundleStorageUpdate(player, false, bundleStack);
                         handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
                         handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
-                    } else {
-                        // There would be no space for the swapped items! what do?
-                        // For now, do nothing, maybe I find a solution later on.
                     }
-                } else {
-                    // Move item from Bundle into the hotbar slot
-                    inventory.selectedSlot = hotbarSlot;
-                    inventory.setStack(hotbarSlot, bundleStack);
-                    sendBundleStorageUpdate(player, false, bundleStack);
-                    handler.sendPacket(new ScreenHandlerSlotUpdateS2CPacket(-2, 0, inventory.selectedSlot, inventory.getStack(inventory.selectedSlot)));
-                    handler.sendPacket(new UpdateSelectedSlotS2CPacket(inventory.selectedSlot));
                 }
             });
         });

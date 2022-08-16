@@ -112,6 +112,10 @@ public class PlayerBundleStorage implements Clearable {
         stacks.clear();
     }
 
+    public int indexOf(ItemStack itemStack) {
+        return stacks.indexOf(itemStack);
+    }
+
     /**
      * Gets the ItemStack at the specified index in the storage.
      *
