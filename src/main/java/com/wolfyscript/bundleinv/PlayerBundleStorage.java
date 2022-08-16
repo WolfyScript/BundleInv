@@ -2,7 +2,7 @@ package com.wolfyscript.bundleinv;
 
 import com.google.common.base.Objects;
 import com.wolfyscript.bundleinv.util.collection.IndexedSortedArraySet;
-import java.util.Iterator;
+import it.unimi.dsi.fastutil.ints.IntHeapIndirectPriorityQueue;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.BlockItem;
@@ -78,49 +78,33 @@ public class PlayerBundleStorage implements Clearable {
         return removed;
     }
 
-    public ItemStack removeStack(int slot, int amount) {
-        if (size() <= slot || slot < 0) return ItemStack.EMPTY;
-        int index = 0;
-        Iterator<ItemStack> iterator = stacks.iterator();
-        while(iterator.hasNext()) {
-            ItemStack current = iterator.next();
-            if (index == slot) {
-                ItemStack removed = current.split(amount);
-                load -= getItemOccupancy(removed) * removed.getCount();
-                if (current.isEmpty()) {
-                    iterator.remove();
-                }
-                return removed;
-            }
-            index++;
-        }
-        return ItemStack.EMPTY;
+    /**
+     * Removes the max possible amount of the item.<br>
+     * The amount is the minimum of the actual items count and max count.
+     *
+     * @param stack The ItemStack to remove.
+     * @return The removed ItemStack; or EMPTY when index is out of bounds or item is empty.
+     */
+    public ItemStack removeMaxStack(ItemStack stack) {
+        return removeStack(stack, stack.getMaxCount());
     }
 
-    public ItemStack removeStack(int slot) {
-        if (size() <= slot || slot < 0) return ItemStack.EMPTY;
-        int index = 0;
-        Iterator<ItemStack> iterator = stacks.iterator();
-        while(iterator.hasNext()) {
-            ItemStack itemStack = iterator.next();
-            if (index == slot) {
-                int count = itemStack.getCount();
-                if (count > itemStack.getMaxCount()) {
-                    int maxCount = itemStack.getMaxCount();
-                    load -= getItemOccupancy(itemStack) * maxCount;
-                    itemStack.setCount(count - maxCount);
+    public ItemStack removeStack(int index, int amount) {
+        if (size() <= index || index < 0) return ItemStack.EMPTY;
+        return removeStack(get(index), amount);
+    }
 
-                    ItemStack returnValue = itemStack.copy();
-                    returnValue.setCount(maxCount);
-                    return returnValue;
-                }
-                load -= getItemOccupancy(itemStack) * count;
-                iterator.remove();
-                return itemStack;
-            }
-            index++;
-        }
-        return ItemStack.EMPTY;
+    /**
+     * Removes the max possible amount of the item, at that index in the Bundle.<br>
+     * The amount is the minimum of the actual items count and max count.
+     *
+     * @param index The index of the item in the Bundle.
+     * @return The removed ItemStack; or EMPTY when index is out of bounds or item is empty.
+     */
+    public ItemStack removeMaxStack(int index) {
+        if (size() <= index || index < 0) return ItemStack.EMPTY;
+        ItemStack toRemove = get(index);
+        return removeStack(toRemove, toRemove.getMaxCount());
     }
 
     @Override
@@ -128,6 +112,17 @@ public class PlayerBundleStorage implements Clearable {
         stacks.clear();
     }
 
+    public int indexOf(ItemStack itemStack) {
+        return stacks.indexOf(itemStack);
+    }
+
+    /**
+     * Gets the ItemStack at the specified index in the storage.
+     *
+     * @param index The index of the ItemStack.
+     * @return The ItemStack at the index in the storage; otherwise {@link ItemStack#EMPTY} if item not available.
+     * @throws IndexOutOfBoundsException If the index is out of bounds.
+     */
     public ItemStack get(int index) {
         ItemStack itemStack = stacks.get(index);
         if (itemStack == null) {
@@ -175,7 +170,34 @@ public class PlayerBundleStorage implements Clearable {
         return !existingStack.isEmpty() && ItemStack.canCombine(existingStack, stack) && this.getRemainingCapacity() >= getItemOccupancy(existingStack);
     }
 
-    private static int getItemOccupancy(ItemStack stack) {
+    public int getSwappableHotbarSlotFor(ItemStack stack) {
+        int slot;
+        for (int i = 0; i < 9; ++i) {
+            slot = (inventory.selectedSlot + i) % 9;
+            if (inventory.main.get(slot).isEmpty()) return slot;
+        }
+        // Find the best item to swap with
+        int stackLoad = PlayerBundleStorage.getItemStackLoad(stack);
+        int[] loadDiffs = new int[9];
+        for (int i = 0; i < 9; ++i) {
+            slot = (inventory.selectedSlot + i) % 9;
+            ItemStack slotStack = inventory.main.get(slot);
+            int load = PlayerBundleStorage.getItemStackLoad(slotStack);
+            loadDiffs[i] = load - stackLoad;
+        }
+        IntHeapIndirectPriorityQueue loadQueue = new IntHeapIndirectPriorityQueue(loadDiffs);
+        for (int i = 0; i < 9; i++) {
+            loadQueue.enqueue(i);
+        }
+        // We use a priority queue to swap the item, that requires the smallest amount of space in the bundle inventory and isn't enchanted.
+        for (int i = 0; i < loadQueue.size(); i++) {
+            slot = (inventory.selectedSlot + loadQueue.dequeue()) % 9;
+            if (!inventory.main.get(slot).hasEnchantments()) return slot;
+        }
+        return inventory.selectedSlot;
+    }
+
+    public static int getItemOccupancy(ItemStack stack) {
         if (stack.isOf(Items.BUNDLE)) {
             return 4 + (int) Math.floor(BundleItem.getAmountFilled(stack) * 64);
         } else {
@@ -187,6 +209,10 @@ public class PlayerBundleStorage implements Clearable {
             }
             return 64 / stack.getMaxCount();
         }
+    }
+
+    public static int getItemStackLoad(ItemStack stack) {
+        return getItemOccupancy(stack) * stack.getCount();
     }
 
     public NbtCompound writeNbt(NbtCompound compound) {
